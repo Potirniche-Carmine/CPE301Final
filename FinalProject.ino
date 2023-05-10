@@ -150,3 +150,61 @@ void disabledState() {
     }
   }while(flag == 1);
 }
+
+
+void setup() {
+
+  lcd.begin(16, 2);
+  myStepper.setSpeed(50);
+
+  pinMode(motorPin, OUTPUT);
+  pinMode(buttonDisable, INPUT);
+  pinMode(buttonPinClock, INPUT);
+  pinMode(buttonPinCounter, INPUT);
+  pinMode(ledPinYellow, OUTPUT);
+  pinMode(ledPinGreen, OUTPUT);
+  pinMode(ledPinRed, OUTPUT);
+  pinMode(ledPinBlue, OUTPUT);
+
+  Serial.begin(9600);
+  dht.begin();
+  URTCLIB_WIRE.begin();
+  rtc.set(0, 43, 2, 3, 5, 9, 23);
+  rtc.refresh();
+  attachInterrupt(digitalPinToInterrupt(buttonDisable), interruptFunction, FALLING);
+
+}
+
+void loop() {
+  rtc.refresh();
+
+  if (flag == 1){
+    disabledState();
+  }
+
+  if (waterLevel < 100){
+    errorState();
+  }
+
+  if (temperatureC > 20 && waterLevel >= 100){
+    runningState();
+  }
+  if (temperatureC <= 15 && waterLevel >= 100){
+    idleState();
+  }
+  while(rtc.second() != 0 && flag == 0){
+    rtc.refresh();
+    buttonStateClock = digitalRead(buttonPinClock);
+    buttonStateCounter = digitalRead(buttonPinCounter);
+    if (buttonStateClock == HIGH){
+	    myStepper.step(-stepsPerRevolution);
+      Serial.println("Fan is moving clockwise");
+    }
+
+    if (buttonStateCounter == HIGH){
+	    myStepper.step(stepsPerRevolution);
+      Serial.println("Fan is moving counter-clockwise");
+    }
+  }
+  recordings();
+}
